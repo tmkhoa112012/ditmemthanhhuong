@@ -34,7 +34,11 @@ const upload = multer({
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+  const a = path.join(__dirname, 'public', 'index.html');
+  const b = path.join(__dirname, 'index.html');
+  res.sendFile(fs.existsSync(a) ? a : b);
+});
 
 app.post('/api/login', (req, res) => {
   if (req.body && req.body.password === ADMIN_PASSWORD) {
