@@ -1,84 +1,99 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASS = '112012';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'khoasieudzkkk888';
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+const DB_FILE = path.join(DATA_DIR, 'images.json');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-// Tạo thư mục lưu ảnh nếu chưa có
-const userDir = path.join(__dirname, 'uploads/user');
-const adminDir = path.join(__dirname, 'uploads/admin');
-fs.mkdirSync(userDir, { recursive: true });
-fs.mkdirSync(adminDir, { recursive: true });
+const loadDB = () => { try { return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch { return []; } };
+const saveDB = (d) => fs.writeFileSync(DB_FILE, JSON.stringify(d));
+
+const sessions = new Set();
+function getCookie(req, name) {
+  const c = (req.headers.cookie || '').split(';').map(s => s.trim());
+  for (const p of c) { const i = p.indexOf('='); if (p.slice(0, i) === name) return decodeURIComponent(p.slice(i + 1)); }
+  return null;
+}
+const isAdmin = (req) => sessions.has(getCookie(req, 'admin_token'));
+
+const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    filename: (req, file, cb) => cb(null, crypto.randomBytes(12).toString('hex') + EXT[file.mimetype])
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, !!EXT[file.mimetype])
+});
 
 app.use(express.json());
-app.use(express.static('public'));
-// Chỉ công khai thư mục ảnh của User
-app.use('/uploads/user', express.static(userDir));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Cấu hình lưu file
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const type = req.headers['x-upload-type'];
-    cb(null, type === 'admin' ? adminDir : userDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'));
-  }
-});
-const upload = multer({ storage });
-
-// Middleware kiểm tra mật khẩu Admin
-function checkAdmin(req, res, next) {
-  if (req.headers['x-admin-pass'] === ADMIN_PASS) {
-    next();
-  } else {
-    res.status(403).json({ error: 'Sai mật khẩu Admin!' });
-  }
-}
-
-// API xác thực đăng nhập Admin
 app.post('/api/login', (req, res) => {
-  if (req.body.password === ADMIN_PASS) {
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ success: false });
+  if (req.body && req.body.password === ADMIN_PASSWORD) {
+    const t = crypto.randomBytes(24).toString('hex');
+    sessions.add(t);
+    res.setHeader('Set-Cookie', `admin_token=${t}; HttpOnly; Path=/; SameSite=Lax; Max-Age=604800`);
+    return res.json({ ok: true });
   }
+  res.status(401).json({ ok: false, error: 'Sai mật khẩu' });
 });
 
-// API lấy danh sách ảnh User (ai cũng xem được)
-app.get('/api/images/user', (req, res) => {
-  const files = fs.readdirSync(userDir).map(f => `/uploads/user/${f}`);
-  res.json(files);
+app.post('/api/logout', (req, res) => {
+  sessions.delete(getCookie(req, 'admin_token'));
+  res.setHeader('Set-Cookie', 'admin_token=; HttpOnly; Path=/; Max-Age=0');
+  res.json({ ok: true });
 });
 
-// API lấy danh sách ảnh Admin (chỉ Admin xem được)
-app.get('/api/images/admin', checkAdmin, (req, res) => {
-  const files = fs.readdirSync(adminDir).map(f => `/api/admin-file/${f}?pass=${ADMIN_PASS}`);
-  res.json(files);
+app.get('/api/me', (req, res) => res.json({ admin: isAdmin(req) }));
+
+// scope=admin -> admin thấy tất cả; còn lại chỉ ảnh công khai
+app.get('/api/images', (req, res) => {
+  const all = loadDB();
+  const list = (req.query.scope === 'admin' && isAdmin(req)) ? all : all.filter(i => i.visibility === 'public');
+  res.json(list.slice().reverse());
 });
 
-// Route bảo vệ ảnh ẩn của Admin (người ngoài biết link cũng không xem được nếu thiếu pass)
-app.get('/api/admin-file/:filename', (req, res) => {
-  if (req.query.pass !== ADMIN_PASS) return res.status(403).send('Cấm truy cập');
-  res.sendFile(path.join(adminDir, req.params.filename));
+app.post('/api/upload', (req, res) => {
+  upload.single('image')(req, res, (err) => {
+    if (err || !req.file) return res.status(400).json({ error: 'Ảnh không hợp lệ (jpg/png/gif/webp, tối đa 10MB)' });
+    const adminMode = req.body.mode === 'admin';
+    if (adminMode && !isAdmin(req)) { fs.unlinkSync(req.file.path); return res.status(401).json({ error: 'Chưa đăng nhập admin' }); }
+    const item = {
+      id: crypto.randomBytes(8).toString('hex'),
+      file: req.file.filename,
+      caption: String(req.body.caption || '').slice(0, 200),
+      visibility: adminMode ? 'admin' : 'public',
+      time: Date.now()
+    };
+    const db = loadDB(); db.push(item); saveDB(db);
+    res.json(item);
+  });
 });
 
-// API Upload ảnh (chỉ Admin mới được đăng)
-app.post('/api/upload', checkAdmin, upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Chưa chọn ảnh' });
-  res.json({ success: true });
+app.delete('/api/images/:id', (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: 'Cần quyền admin' });
+  const db = loadDB();
+  const it = db.find(i => i.id === req.params.id);
+  if (!it) return res.status(404).json({ error: 'Không tìm thấy' });
+  try { fs.unlinkSync(path.join(UPLOAD_DIR, it.file)); } catch {}
+  saveDB(db.filter(i => i.id !== it.id));
+  res.json({ ok: true });
 });
 
-// API Xóa ảnh
-app.delete('/api/delete', checkAdmin, (req, res) => {
-  const { type, filename } = req.body;
-  const targetDir = type === 'admin' ? adminDir : userDir;
-  const filePath = path.join(targetDir, path.basename(filename));
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  res.json({ success: true });
+// Ảnh chỉ-admin sẽ bị chặn nếu không đăng nhập admin
+app.get('/img/:file', (req, res) => {
+  const it = loadDB().find(i => i.file === req.params.file);
+  if (!it) return res.sendStatus(404);
+  if (it.visibility === 'admin' && !isAdmin(req)) return res.sendStatus(403);
+  res.sendFile(path.join(UPLOAD_DIR, it.file));
 });
 
-app.listen(PORT, () => console.log(`Server chạy tại port ${PORT}`));
+app.listen(PORT, () => console.log('Server chạy ở cổng ' + PORT));
