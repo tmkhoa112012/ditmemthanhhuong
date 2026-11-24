@@ -2,12 +2,14 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
+<meta name="color-scheme" content="only light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đăng ảnh</title>
 <style>
   :root{--bg:#f4f5f7;--card:#fff;--text:#1d2129;--muted:#6b7280;--pri:#3b82f6;--danger:#ef4444;--line:#e5e7eb}
-  @media (prefers-color-scheme:dark){:root{--bg:#111318;--card:#1b1e26;--text:#eceef2;--muted:#9aa3b2;--line:#2b303b}}
+  :root{color-scheme:light}
   *{box-sizing:border-box}
+  html{background:#f4f5f7;color-scheme:only light}
   body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
   .wrap{max-width:900px;margin:0 auto;padding:16px}
   h1{font-size:22px;margin:8px 0 16px}
@@ -107,7 +109,7 @@ async function loadImages() {
   const list = await api('/api/images' + (mode === 'admin' && isAdmin ? '?scope=admin' : ''));
   const grid = $('grid');
   grid.innerHTML = '';
-  if (!list.length) { grid.innerHTML = '<div class="muted">Chưa có ảnh nào.</div>'; return; }
+  if (!list.length) { grid.innerHTML = '<div class="muted" style="grid-column:1/-1;text-align:center;padding:30px;font-size:16px">Hiện tại chưa có ảnh được đăng lên.</div>'; return; }
   for (const it of list) {
     const div = document.createElement('div'); div.className = 'item';
     const img = document.createElement('img');
