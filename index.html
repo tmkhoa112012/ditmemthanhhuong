@@ -1,239 +1,176 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thư Viện Ảnh</title>
-  <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body { margin: 0; background: #0f172a; color: #f8fafc; }
-    
-    /* Màn hình chọn vai trò */
-    #role-modal {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.96);
-      display: flex; align-items: center; justify-content: center; z-index: 100;
-    }
-    .modal-box {
-      background: #1e293b; padding: 30px; border-radius: 16px;
-      text-align: center; width: 90%; max-width: 380px;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 1px solid #334155;
-    }
-    .modal-box h2 { margin-top: 0; }
-    .btn {
-      padding: 12px 20px; border: none; border-radius: 8px; font-size: 16px;
-      font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px;
-    }
-    .btn-user { background: #3b82f6; color: white; }
-    .btn-user:hover { background: #2563eb; }
-    .btn-admin { background: #ef4444; color: white; }
-    .btn-admin:hover { background: #dc2626; }
-    input[type="password"], input[type="file"] {
-      width: 100%; padding: 12px; margin-top: 12px; border-radius: 8px;
-      border: 1px solid #475569; background: #0f172a; color: white; font-size: 16px;
-    }
-
-    /* Giao diện chính */
-    header {
-      background: #1e293b; padding: 15px 25px; display: flex;
-      justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;
-    }
-    .container { max-width: 1100px; margin: 25px auto; padding: 0 15px; }
-    
-    /* Khu vực Admin */
-    .admin-panel {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px; margin-bottom: 35px;
-    }
-    .upload-card {
-      background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155;
-    }
-    .upload-card h3 { margin-top: 0; font-size: 18px; }
-
-    /* Lưới ảnh */
-    .section-title { border-left: 4px solid #3b82f6; padding-left: 12px; margin: 30px 0 15px; }
-    .section-title.secret { border-color: #ef4444; color: #fca5a5; }
-    .gallery {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;
-    }
-    .img-card {
-      position: relative; background: #1e293b; border-radius: 10px;
-      overflow: hidden; aspect-ratio: 1 / 1; border: 1px solid #334155;
-    }
-    .img-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .del-btn {
-      position: absolute; top: 8px; right: 8px; background: rgba(239, 68, 68, 0.9);
-      color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer;
-    }
-    .hidden { display: none !important; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng ảnh</title>
+<style>
+  :root{--bg:#f4f5f7;--card:#fff;--text:#1d2129;--muted:#6b7280;--pri:#3b82f6;--danger:#ef4444;--line:#e5e7eb}
+  @media (prefers-color-scheme:dark){:root{--bg:#111318;--card:#1b1e26;--text:#eceef2;--muted:#9aa3b2;--line:#2b303b}}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .wrap{max-width:900px;margin:0 auto;padding:16px}
+  h1{font-size:22px;margin:8px 0 16px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px}
+  .tabs button{flex:1;padding:12px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;font-size:15px;cursor:pointer}
+  .tabs button.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  input[type=text],input[type=password],input[type=file]{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);margin:6px 0;font-size:15px}
+  .btn{padding:10px 16px;border:0;border-radius:8px;background:var(--pri);color:#fff;font-size:15px;cursor:pointer}
+  .btn.danger{background:var(--danger)} .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .item img{width:100%;height:180px;object-fit:cover;display:block;cursor:zoom-in}
+  .item .info{padding:8px 10px;font-size:13px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;margin-bottom:4px}
+  .badge.pub{background:#dcfce7;color:#166534} .badge.adm{background:#fee2e2;color:#991b1b}
+  .muted{color:var(--muted);font-size:13px} .err{color:var(--danger);font-size:14px;min-height:20px}
+  .hidden{display:none}
+  #viewer{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9}
+  #viewer img{max-width:95%;max-height:95%}
+</style>
 </head>
 <body>
-
-  <!-- Hộp thoại hỏi vai trò khi mới vào -->
-  <div id="role-modal">
-    <div class="modal-box" id="step-1">
-      <h2>Bạn là ai?</h2>
-      <p style="color:#94a3b8;">Chọn chế độ truy cập thư viện ảnh</p>
-      <button class="btn btn-user" onclick="enterUserMode()">👤 Tôi là User</button>
-      <button class="btn btn-admin" onclick="showAdminLogin()">🔑 Tôi là Admin</button>
-    </div>
-
-    <div class="modal-box hidden" id="step-2">
-      <h2>Xác thực Admin</h2>
-      <input type="password" id="admin-pass" placeholder="Nhập mật khẩu Admin...">
-      <button class="btn btn-admin" onclick="verifyAdmin()">Đăng nhập</button>
-      <button class="btn" style="background:#334155;color:#cbd5e1;" onclick="backToStep1()">Quay lại</button>
-      <p id="error-msg" style="color:#f87171; font-size:14px; margin-top:10px;"></p>
-    </div>
+<div class="wrap">
+  <h1>📷 Đăng ảnh</h1>
+  <div class="tabs">
+    <button id="tabUser" class="active">Chế độ User</button>
+    <button id="tabAdmin">Chế độ Admin</button>
   </div>
 
-  <!-- Thanh điều hướng -->
-  <header>
-    <strong id="mode-badge">Chế độ: Đang chờ...</strong>
-    <button class="btn" style="width:auto; margin:0; padding:8px 14px; background:#334155; color:white;" onclick="location.reload()">Đổi chế độ</button>
-  </header>
-
-  <div class="container">
-    <!-- Bảng điều khiển chỉ hiện khi là Admin -->
-    <div id="admin-controls" class="admin-panel hidden">
-      <div class="upload-card">
-        <h3 style="color:#60a5fa;">1. Đăng ảnh cho User (Công khai)</h3>
-        <input type="file" id="file-user" accept="image/*">
-        <button class="btn btn-user" onclick="uploadImage('user')">Tải lên mục User</button>
-      </div>
-      <div class="upload-card">
-        <h3 style="color:#f87171;">2. Đăng ảnh cho Admin (Ảnh ẩn)</h3>
-        <input type="file" id="file-admin" accept="image/*">
-        <button class="btn btn-admin" onclick="uploadImage('admin')">Tải lên mục Ẩn</button>
-      </div>
-    </div>
-
-    <!-- Khu vực ảnh ẩn (Chỉ Admin mới thấy) -->
-    <div id="admin-gallery-section" class="hidden">
-      <h2 class="section-title secret">🔒 Kho Ảnh Ẩn (Chỉ Admin xem được)</h2>
-      <div id="admin-gallery" class="gallery"></div>
-    </div>
-
-    <!-- Khu vực ảnh công khai (User và Admin đều thấy) -->
-    <h2 class="section-title">🖼️ Thư Viện Ảnh Công Khai</h2>
-    <div id="user-gallery" class="gallery"></div>
+  <!-- Đăng nhập admin -->
+  <div id="loginBox" class="card hidden">
+    <b>Đăng nhập Admin</b>
+    <input type="password" id="pw" placeholder="Nhập mật khẩu admin">
+    <div class="err" id="loginErr"></div>
+    <button class="btn" id="loginBtn">Đăng nhập</button>
   </div>
 
-  <script>
-    let adminPassword = '';
+  <!-- Form đăng ảnh -->
+  <div id="uploadBox" class="card">
+    <div class="row"><b id="uploadTitle">Đăng ảnh (công khai)</b><button class="btn ghost hidden" id="logoutBtn">Đăng xuất admin</button></div>
+    <p class="muted" id="uploadHint">Ảnh đăng ở đây sẽ được cả User và Admin xem.</p>
+    <input type="file" id="file" accept="image/png,image/jpeg,image/gif,image/webp">
+    <input type="text" id="caption" placeholder="Chú thích (không bắt buộc)" maxlength="200">
+    <div class="err" id="upErr"></div>
+    <button class="btn" id="upBtn">Đăng ảnh</button>
+  </div>
 
-    function showAdminLogin() {
-      document.getElementById('step-1').classList.add('hidden');
-      document.getElementById('step-2').classList.remove('hidden');
-      document.getElementById('admin-pass').focus();
+  <div class="muted" id="galleryTitle" style="margin-bottom:8px"></div>
+  <div class="grid" id="grid"></div>
+</div>
+<div id="viewer" class="hidden"><img id="viewerImg" alt=""></div>
+
+<script>
+let mode = 'user';      // 'user' | 'admin'
+let isAdmin = false;
+const $ = (id) => document.getElementById(id);
+
+async function api(url, opt) {
+  const r = await fetch(url, opt);
+  let data = {}; try { data = await r.json(); } catch {}
+  if (!r.ok) throw new Error(data.error || 'Có lỗi xảy ra');
+  return data;
+}
+
+async function init() {
+  isAdmin = (await api('/api/me')).admin;
+  render();
+}
+
+function setMode(m) {
+  mode = m;
+  render();
+}
+
+function render() {
+  $('tabUser').classList.toggle('active', mode === 'user');
+  $('tabAdmin').classList.toggle('active', mode === 'admin');
+  const needLogin = mode === 'admin' && !isAdmin;
+  $('loginBox').classList.toggle('hidden', !needLogin);
+  $('uploadBox').classList.toggle('hidden', needLogin);
+  $('logoutBtn').classList.toggle('hidden', !(mode === 'admin' && isAdmin));
+  if (mode === 'admin') {
+    $('uploadTitle').textContent = 'Đăng ảnh (chỉ Admin xem)';
+    $('uploadHint').textContent = 'Ảnh đăng ở chế độ Admin chỉ mình Admin xem được.';
+    $('galleryTitle').textContent = 'Tất cả ảnh (Admin thấy cả ảnh công khai và ảnh riêng)';
+  } else {
+    $('uploadTitle').textContent = 'Đăng ảnh (công khai)';
+    $('uploadHint').textContent = 'Ảnh đăng ở đây sẽ được cả User và Admin xem.';
+    $('galleryTitle').textContent = 'Ảnh công khai';
+  }
+  if (!needLogin) loadImages(); else $('grid').innerHTML = '';
+}
+
+async function loadImages() {
+  const list = await api('/api/images' + (mode === 'admin' && isAdmin ? '?scope=admin' : ''));
+  const grid = $('grid');
+  grid.innerHTML = '';
+  if (!list.length) { grid.innerHTML = '<div class="muted">Chưa có ảnh nào.</div>'; return; }
+  for (const it of list) {
+    const div = document.createElement('div'); div.className = 'item';
+    const img = document.createElement('img');
+    img.src = '/img/' + it.file; img.loading = 'lazy';
+    img.onclick = () => { $('viewerImg').src = img.src; $('viewer').classList.remove('hidden'); };
+    const info = document.createElement('div'); info.className = 'info';
+    const badge = document.createElement('span');
+    badge.className = 'badge ' + (it.visibility === 'admin' ? 'adm' : 'pub');
+    badge.textContent = it.visibility === 'admin' ? 'Chỉ Admin' : 'Công khai';
+    const cap = document.createElement('div'); cap.textContent = it.caption || '';
+    const time = document.createElement('div'); time.className = 'muted';
+    time.textContent = new Date(it.time).toLocaleString('vi-VN');
+    info.append(badge, cap, time);
+    if (isAdmin && mode === 'admin') {
+      const del = document.createElement('button');
+      del.className = 'btn danger'; del.style.marginTop = '6px'; del.textContent = 'Xóa';
+      del.onclick = async () => {
+        if (!confirm('Xóa ảnh này?')) return;
+        try { await api('/api/images/' + it.id, { method: 'DELETE' }); loadImages(); } catch (e) { alert(e.message); }
+      };
+      info.append(del);
     }
+    div.append(img, info);
+    grid.append(div);
+  }
+}
 
-    function backToStep1() {
-      document.getElementById('step-2').classList.add('hidden');
-      document.getElementById('step-1').classList.remove('hidden');
-      document.getElementById('error-msg').innerText = '';
-    }
+$('tabUser').onclick = () => setMode('user');
+$('tabAdmin').onclick = () => setMode('admin');
+$('viewer').onclick = () => $('viewer').classList.add('hidden');
 
-    // Chế độ User
-    function enterUserMode() {
-      document.getElementById('role-modal').classList.add('hidden');
-      document.getElementById('mode-badge').innerText = '👤 Chế độ: USER';
-      loadUserImages();
-    }
+$('loginBtn').onclick = async () => {
+  $('loginErr').textContent = '';
+  try {
+    await api('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) });
+    isAdmin = true; $('pw').value = ''; render();
+  } catch (e) { $('loginErr').textContent = e.message; }
+};
+$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
 
-    // Kiểm tra mật khẩu Admin
-    async function verifyAdmin() {
-      const pass = document.getElementById('admin-pass').value;
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pass })
-      });
+$('logoutBtn').onclick = async () => {
+  await api('/api/logout', { method: 'POST' });
+  isAdmin = false; mode = 'user'; render();
+};
 
-      if (res.ok) {
-        adminPassword = pass;
-        document.getElementById('role-modal').classList.add('hidden');
-        document.getElementById('mode-badge').innerText = '🔑 Chế độ: ADMIN';
-        document.getElementById('admin-controls').classList.remove('hidden');
-        document.getElementById('admin-gallery-section').classList.remove('hidden');
-        loadUserImages();
-        loadAdminImages();
-      } else {
-        document.getElementById('error-msg').innerText = 'Sai mật khẩu! Vui lòng thử lại.';
-      }
-    }
+$('upBtn').onclick = async () => {
+  $('upErr').textContent = '';
+  const f = $('file').files[0];
+  if (!f) { $('upErr').textContent = 'Hãy chọn một ảnh'; return; }
+  const fd = new FormData();
+  fd.append('mode', mode);
+  fd.append('caption', $('caption').value);
+  fd.append('image', f);
+  $('upBtn').disabled = true;
+  try {
+    await api('/api/upload', { method: 'POST', body: fd });
+    $('file').value = ''; $('caption').value = '';
+    loadImages();
+  } catch (e) { $('upErr').textContent = e.message; }
+  $('upBtn').disabled = false;
+};
 
-    // Tải danh sách ảnh User
-    async function loadUserImages() {
-      const res = await fetch('/api/images/user');
-      const images = await res.json();
-      renderGallery('user-gallery', images, 'user');
-    }
-
-    // Tải danh sách ảnh Admin
-    async function loadAdminImages() {
-      const res = await fetch('/api/images/admin', {
-        headers: { 'x-admin-pass': adminPassword }
-      });
-      const images = await res.json();
-      renderGallery('admin-gallery', images, 'admin');
-    }
-
-    // Hiển thị ảnh ra giao diện
-    function renderGallery(elementId, images, type) {
-      const container = document.getElementById(elementId);
-      container.innerHTML = images.length === 0 ? '<p style="color:#64748b;">Chưa có ảnh nào.</p>' : '';
-      images.forEach(src => {
-        const cleanName = src.split('?')[0].split('/').pop();
-        const delBtn = adminPassword 
-          ? `<button class="del-btn" onclick="deleteImage('${type}', '${cleanName}')">Xóa</button>` 
-          : '';
-        container.innerHTML += `
-          <div class="img-card">
-            <img src="${src}" loading="lazy">
-            ${delBtn}
-          </div>`;
-      });
-    }
-
-    // Upload ảnh
-    async function uploadImage(type) {
-      const input = document.getElementById(type === 'admin' ? 'file-admin' : 'file-user');
-      if (!input.files[0]) return alert('Vui lòng chọn một file ảnh!');
-
-      const formData = new FormData();
-      formData.append('image', input.files[0]);
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'x-admin-pass': adminPassword,
-          'x-upload-type': type
-        },
-        body: formData
-      });
-
-      if (res.ok) {
-        input.value = '';
-        type === 'admin' ? loadAdminImages() : loadUserImages();
-      } else {
-        alert('Lỗi khi tải ảnh lên!');
-      }
-    }
-
-    // Xóa ảnh
-    async function deleteImage(type, filename) {
-      if (!confirm('Xóa ảnh này?')) return;
-      await fetch('/api/delete', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-pass': adminPassword
-        },
-        body: JSON.stringify({ type, filename })
-      });
-      type === 'admin' ? loadAdminImages() : loadUserImages();
-    }
-  </script>
+init();
+</script>
 </body>
 </html>
